@@ -1,0 +1,295 @@
+using System;
+using System.Threading;
+
+namespace snake
+{
+    class Program
+    {
+        public struct snake
+        {
+            public int x;
+            public int y;
+            public int lenght;
+            public string course;
+        }
+        public struct apple
+        {
+            public int x;
+            public int y;
+            public int number;
+        }
+        static void Main(string[] args)
+        {
+            Thread T = new Thread(biggermain, 999999999); //powiększenie bufora
+            T.Start();  
+        }
+        static void biggermain() 
+        {
+            screen_settings();
+            screen();
+            draw_score(0, 0);
+            play_game(0);
+        }
+        static void screen_settings()
+        {
+            Console.Title = "Snake_by_Rybson"; //nazwa
+            Console.CursorVisible = false; //wyłączenie kursora
+            Console.SetWindowSize(36, 36); //wielkość okna
+        }
+        static void draw_score(int real_score, int high_score)
+        {
+            Console.SetCursorPosition(10, 0);
+            Console.Write("Score:        "); //czyszczenie czasami zostaje cyferka ostatnia jak np z wyniku ujemnego przechodzi na dodatni 
+            Console.SetCursorPosition(10, 0);
+            Console.Write("Score:" + real_score); //aktualny wynik
+            Console.SetCursorPosition(10, 1);
+            if (high_score > 0)
+            {
+                Console.BackgroundColor = ConsoleColor.Yellow;
+                Console.ForegroundColor = ConsoleColor.Red;
+            }
+            Console.Write("High score:" + high_score); //najlepszy wynik
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+        static void play_game(int high_score)
+        {
+            int delay = 100; //początkowe tempo gry 
+            int moves = 0;
+            int real_score = 0;
+            int old_python_x = 15;
+            int old_python_y = 15;
+            int[] snake_body_x = new int[900]; //mapa 28x28 = 784 -1 max długość węża
+            int[] snake_body_y = new int[900];
+            char snake = '■';
+            ConsoleKeyInfo key;
+            snake python;
+            apple apple = new apple();
+            python.x = 15;
+            python.y = 15;
+            python.lenght = 3;
+            python.course = "Up";
+            apple = random_apple(apple, snake_body_x, snake_body_y, python);
+            apple.number = 0;
+            Console.SetCursorPosition(apple.x, apple.y); //rysowaniw pierwszego jabłka chyba trza pierdolnąć do tego funkcje
+            Console.BackgroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("*");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.Black;
+
+            while (true)
+            {
+                Thread.Sleep(delay); //opóźnienie == szybkość gry, im mniejsze tym szybciej 
+                old_python_x = python.x;
+                old_python_y = python.y;
+               
+                if (Console.KeyAvailable == true) //jeśli klawisz został wciśnięty
+                {
+                    key = Console.ReadKey();
+                    switch (key.Key.ToString())
+                    {
+                        case "LeftArrow":
+                            if(python.course != "Right") //zakaz zawracania
+                            python.course = "Left";
+                            break;
+                        case "RightArrow":
+                            if (python.course != "Left")
+                                python.course = "Right";
+                            break;
+                        case "UpArrow":
+                            if (python.course != "Down")
+                                python.course = "Up";
+                            break;
+                        case "DownArrow":
+                            if (python.course != "Up")
+                                python.course = "Down";
+                            break;
+                    }
+                }
+                if (python.course == "Left")
+                {
+                    python.x -= 1;
+                    if (python.x == 0)
+                        python.x = 28;
+                }
+                if (python.course == "Right")
+                {
+                    python.x += 1;
+                    if (python.x == 29)
+                        python.x = 1;
+                }
+                if (python.course == "Up")
+                {
+                    python.y -= 1;
+                    if (python.y == 2)
+                        python.y = 30;
+                }
+                if (python.course == "Down")
+                {
+                    python.y += 1;
+                    if (python.y == 31)
+                        python.y = 3;
+                }
+
+                snake_body_x[0] = python.x; // dodanie nowej głowy do tablicy
+                snake_body_y[0] = python.y;
+                snake_body_x[1] = old_python_x; //przesunięcie starej głowy na pierwszą część ogonu
+                snake_body_y[1] = old_python_y;
+
+                for (int i = python.lenght; i >= 1; i--) //przesuwanie starych głów/ogonu do tylu tablicy, "stos/kopiec", tutaj powinno być zabezpieczenie jakieś ale nie ma chuja że
+                {                                        // ktos zdobedzie tyle puntkow zeby cala tablice zajebac 
+                    snake_body_x[i + 1] = snake_body_x[i];
+                    snake_body_y[i + 1] = snake_body_y[i];
+                }
+
+                for (int i = python.lenght-1; i >= 0; i--) //rysowanie wszystkich pozycji węża versja premium
+                {
+                    if (i == python.lenght-1)
+                    {
+                        Console.SetCursorPosition(snake_body_x[python.lenght], snake_body_y[python.lenght]);
+                        Console.Write(" ");
+                    }
+                    else
+                    {
+                        Console.SetCursorPosition(snake_body_x[i], snake_body_y[i]);
+                        if (i % 2 == 0)
+                        {
+                            Console.BackgroundColor = ConsoleColor.DarkGreen;
+                            Console.ForegroundColor = ConsoleColor.Green;
+                        }
+                        else
+                        {
+                            Console.BackgroundColor = ConsoleColor.Green;
+                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                        }
+
+
+                        Console.Write(snake);
+                    }
+                }
+          
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.BackgroundColor = ConsoleColor.Black; 
+
+                moves++; //zwiększenie ilości ruchów, potrzebne do punkatacji 
+
+                if (python.x == apple.x && python.y == apple.y) //zjadł czy nie?
+                {
+                    apple = random_apple(apple, snake_body_x, snake_body_y, python);
+
+                    Console.SetCursorPosition(apple.x, apple.y);
+                    Console.BackgroundColor = ConsoleColor.Red;
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write("*");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    real_score += (1000-(moves*16)); //punktacja, do 60 (2 długości mapy) daje wynik dodatni, ponad 60 ujemny, trza grać a nie się opierdalać
+                    draw_score(real_score, high_score);
+                    
+                    python.lenght += 2; //wydłużenie węża 
+
+                    Console.SetCursorPosition(0, 1); // LastScore - informacyjnie, czy warto było tak?
+                    Console.Write("LS:      ");
+                    Console.SetCursorPosition(0, 1);
+                    Console.Write("LS:"+(1000 - (moves * 16)));
+                    moves = 0; //zerwownie ruchów do następnej punktacji
+                    delay -= 1; //zwiększanie prędkości
+                    if (delay < 50) //poniżej tego wąż tak zapierdala że głowa mała 
+                        delay = 50;
+                   
+                }
+               
+                for (int i = 1; i < python.lenght; i++) //badanie kolizji
+                {
+                    if (snake_body_x[0] == snake_body_x[i] && snake_body_y[0] == snake_body_y[i])
+                    {
+                        Console.SetCursorPosition(10, 10);
+                        Console.BackgroundColor = ConsoleColor.Red;
+                        Console.WriteLine("GAME OVER");
+                        Console.SetCursorPosition(10, 11);
+                        Console.WriteLine("Score: " + real_score);
+                        Console.SetCursorPosition(3, 12);
+                        Console.WriteLine("press any key to replay");
+                        Thread.Sleep(1000);
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        Console.ReadKey();
+                        Console.Clear();
+                        screen();
+                        if (real_score > high_score)
+                            high_score = real_score;
+                        draw_score(0, high_score);
+                        play_game(high_score);
+                    }
+                }
+                Console.SetCursorPosition(33, 0); //wyjebanie kursora w pizdu żeby nie rozpierdalał randowo ramki/weża/jabłka
+            }
+        }
+        static apple random_apple(apple apple, int[] snake_body_x, int[] snake_body_y, snake python)
+        {
+            Random rnd = new Random();
+            int x;
+            int y;
+            int repeat;
+         
+            while (true)
+            {
+                repeat = 0;
+                x = rnd.Next(2, 28); //ograniczenie względem mapy
+                y = rnd.Next(3,29);
+                for(int i =0; i < python.lenght+1; i++)
+                {
+                    if (x == snake_body_x[i] && y == snake_body_y[i]) //wykluczenie pojawienia się jabłka na wężu
+                    {
+                        repeat = repeat+1; //powtórzenia
+                    }
+                }
+                if(repeat == 0) //jeśli brak powtórzeń
+                {
+                    apple.x = x;
+                    apple.y = y;
+                    break;
+                }
+            }
+            apple.number++;
+            Console.SetCursorPosition(0, 0); //wypisanie ilości zjedzonych jabłek
+            Console.Write("Apple:"+apple.number);
+            return apple;
+        }
+        static void screen()
+        {
+            string[,] map = new string[30, 30];
+            Console.SetCursorPosition(0, 2);
+            for (int i = 0; i < 30; i++)
+            {
+                for (int l = 0; l < 30; l++)
+                {
+                    if (i == 0 || i == 29)
+                    {
+
+                        map[i, l] = "#";
+
+                    }
+                    else if (l == 0 || l == 29)
+                    {
+
+                        map[i, l] = "#";
+
+                    }
+                    else
+                        map[i, l] = " ";
+                    if (map[i, l] != " ") 
+                    {
+                        Console.BackgroundColor = ConsoleColor.Blue;
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                    }
+                    Console.Write(map[i, l]);
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                Console.WriteLine();
+            }
+            Console.SetCursorPosition(0, 0);
+        }
+    }
+}
